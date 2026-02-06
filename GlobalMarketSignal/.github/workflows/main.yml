@@ -1,0 +1,38 @@
+﻿name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [ master, main ]
+
+jobs:
+  deploy-to-github-pages:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. 내 코드 가져오기
+      - uses: actions/checkout@v3
+
+      # 2. .NET 설치
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '8.0.x'
+
+      # 3. 프로젝트 빌드 (★★★ 수정된 부분 ★★★)
+      # 파일 이름이 뭐든 상관없이(.csproj) 알아서 찾아서 빌드하라는 명령입니다.
+      - name: Publish .NET Core Project
+        run: dotnet publish **/*.csproj -c Release -o release --nologo
+
+      # 4. index.html 복사 (새로고침 에러 방지)
+      - name: Copy index.html to 404.html
+        run: cp release/wwwroot/index.html release/wwwroot/404.html
+
+      # 5. Jekyll 끄기 (빨간불 방지 필수)
+      - name: Add .nojekyll file
+        run: touch release/wwwroot/.nojekyll
+
+      # 6. 깃허브 페이지로 배포
+      - name: Commit wwwroot to GitHub Pages
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: gh-pages
+          folder: release/wwwroot
