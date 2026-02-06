@@ -20,7 +20,7 @@ jobs:
       # 3. 프로젝트 빌드 (★★★ 수정된 부분 ★★★)
       # 파일 이름이 뭐든 상관없이(.csproj) 알아서 찾아서 빌드하라는 명령입니다.
       - name: Publish .NET Core Project
-        run: dotnet publish **/*.csproj -c Release -o release --nologo
+        run: dotnet publish **/GlobalMarketSignal.csproj -c Release -o release --nologo
 
       # 4. index.html 복사 (새로고침 에러 방지)
       - name: Copy index.html to 404.html
