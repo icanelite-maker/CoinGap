@@ -17,18 +17,16 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
-      # 3. 프로젝트 빌드 (이 부분이 중요!)
+      # 3. 프로젝트 빌드 (★★★ 수정된 부분 ★★★)
+      # 파일 이름이 뭐든 상관없이(.csproj) 알아서 찾아서 빌드하라는 명령입니다.
       - name: Publish .NET Core Project
-        # ★주의★ CoinGap.csproj 경로가 맞는지 확인하세요. 
-        # 만약 솔루션 폴더 바로 아래에 있다면 그냥 dotnet publish -c Release ... 입니다.
-        # 아래는 일반적인 구조일 때의 예시입니다.
-        run: dotnet publish CoinGap.csproj -c Release -o release --nologo
+        run: dotnet publish **/*.csproj -c Release -o release --nologo
 
       # 4. index.html 복사 (새로고침 에러 방지)
       - name: Copy index.html to 404.html
         run: cp release/wwwroot/index.html release/wwwroot/404.html
 
-      # 5. ★★★ 핵심 해결책: Jekyll 끄기 ★★★dd
+      # 5. Jekyll 끄기 (빨간불 방지 필수)
       - name: Add .nojekyll file
         run: touch release/wwwroot/.nojekyll
 
