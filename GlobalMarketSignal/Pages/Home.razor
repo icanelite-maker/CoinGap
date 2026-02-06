@@ -1,0 +1,371 @@
+﻿@page "/"
+@using System.Net.Http
+@using System.Text.Json
+@using System.Threading 
+@implements IDisposable
+@inject HttpClient Http
+
+<PageTitle>CoinGap Global</PageTitle>
+
+<style>
+    .container {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 20px;
+        font-family: 'Segoe UI', sans-serif;
+    }
+
+    /* 2x2 그리드 레이아웃 */
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+    @@media (min-width: 768px) {
+        .dashboard-grid { grid-template-columns: 1fr 1fr; }
+    }
+
+    /* 카드 스타일 */
+    .dashboard-card {
+        background: #161b22;
+        border: 1px solid #30363d;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        min-height: 250px; /* 높이 통일감 */
+    }
+
+    .section-header {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #8b949e;
+        margin-bottom: 15px;
+        text-transform: uppercase;
+        border-bottom: 1px solid #30363d;
+        padding-bottom: 10px;
+        display: flex;
+        justify-content: space-between;
+    }
+
+    /* 텍스트 스타일 */
+    .text-gap { font-size: 2.5rem; font-weight: 900; line-height: 1; margin: 10px 0; }
+    .text-val-main { font-size: 1.5rem; font-weight: 800; color: #fff; }
+
+    /* RSI & Trend */
+    .rsi-inner-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .rsi-item { background: #0d1117; border-radius: 8px; padding: 10px; text-align: center; border: 1px solid #30363d; }
+    .trend-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #21262d; font-size: 0.9rem; }
+    .trend-item:last-child { border-bottom: none; }
+
+    /* 버튼 */
+    .btn-action {
+        background: #238636;
+        color: white;
+        border: none;
+        padding: 12px;
+        border-radius: 6px;
+        font-weight: bold;
+        width: 100%;
+        margin-top: auto; /* 하단 고정 */
+        cursor: pointer;
+    }
+    .btn-action:hover { background: #2ea043; }
+
+    /* ★ 하단 푸터 (Footer) 스타일 */
+    .app-footer {
+        margin-top: 50px;
+        border-top: 1px solid #30363d;
+        padding-top: 20px;
+        text-align: center;
+        color: #8b949e;
+        font-size: 0.85rem;
+    }
+    .footer-disclaimer {
+        background: #161b22;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        border: 1px solid #30363d;
+    }
+    .wallet-address {
+        background: #0d1117;
+        padding: 8px 15px;
+        border-radius: 20px;
+        font-family: monospace;
+        color: #e6edf3;
+        display: inline-block;
+        margin-top: 5px;
+        border: 1px solid #30363d;
+    }
+    .live-dot {
+        height: 10px; width: 10px; background-color: #00e676;
+        border-radius: 50%; display: inline-block; margin-right: 5px;
+        animation: blink 1.5s infinite;
+    }
+    @@keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+</style>
+
+<div class="container">
+
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px; border-bottom:1px solid #30363d; padding-bottom:15px;">
+        <div>
+            <h1 style="font-family:'Impact', sans-serif; font-size: 2rem; margin:0;">
+                COIN<span style="color:#00e676">GAP</span>
+            </h1>
+        </div>
+        <div style="text-align:right;">
+            <div style="font-size:0.8rem; color:#8b949e; display:flex; align-items:center; justify-content:flex-end;">
+                <span class="live-dot"></span> Live Data
+            </div>
+            <div style="font-weight:bold; color:#e6edf3;">$1 = @exchangeRate.ToString("N0") ₩</div>
+        </div>
+    </div>
+
+    <div class="dashboard-grid">
+
+        <div class="dashboard-card" style="border-top: 3px solid @gapBorderColor;">
+            <div class="section-header">
+                <span>💰 Premium Gap</span>
+                <span style="color:@gapMsgColor; font-weight:bold;">BTC/KRW</span>
+            </div>
+
+            <div style="text-align:center; margin: 15px 0;">
+                <div class="text-gap" style="color:@gapMsgColor;">@gapPercent.ToString("F2")%</div>
+                <div style="font-size:1.1rem; color:@gapMsgColor; font-weight:bold;">@gapMessage</div>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; align-items:center; background:#0d1117; padding:20px 5px; border-radius:12px; margin-bottom:15px; border: 1px solid #30363d;">
+
+                <div style="text-align:center; flex:1; min-width: 0;"> <img src="https://cryptologos.cc/logos/binance-coin-bnb-logo.png" width="30" height="30" alt="Binance" style="margin-bottom:2px;"/>
+
+                    <div style="color:#FCD535; font-size:1.2rem; font-weight:900; letter-spacing:0.5px;">BINANCE</div>
+
+                    <div class="text-val-main" style="margin-top:5px; white-space:nowrap;">$ @binanceUsd.ToString("N0")</div>
+                    <div style="font-size:1.1rem; color:#8b949e; font-weight:bold; white-space:nowrap;">≈ @binanceKrw.ToString("N0")₩</div>
+                </div>
+
+                <div style="color:#30363d; font-size:1.5rem; font-weight:bold; margin: 0 5px;">⚡</div>
+
+                <div style="text-align:center; flex:1; min-width: 0;">
+                    <img src="https://www.google.com/s2/favicons?domain=upbit.com&sz=64" width="30" height="30" style="object-fit:contain; margin-bottom:2px;" alt="Upbit"/>
+
+                    <div style="color:#0058CC; font-size:1.2rem; font-weight:900; letter-spacing:0.5px; filter: brightness(1.5);">UPBIT</div>
+
+                    <div class="text-val-main" style="margin-top:5px; white-space:nowrap;">₩ @upbitKrw.ToString("N0")</div>
+                    <div style="font-size:1.1rem; color:#8b949e; font-weight:bold; white-space:nowrap;">≈ $@upbitUsd.ToString("N0")</div>
+                </div>
+            </div>
+
+            <button class="btn-action">@actionButtonText</button>
+        </div>
+
+        <div class="dashboard-card">
+            <div class="section-header"><span>📊 Market Mood</span></div>
+            @if (fearGreed != null)
+            {
+                    <div style="text-align:center; flex-grow:1; display:flex; flex-direction:column; justify-content:center;">
+                        <div style="width:140px; height:70px; margin:0 auto; position:relative; overflow:hidden;">
+                            <div style="width:100%; height:100%; background:#30363d; border-radius:70px 70px 0 0;"></div>
+                            <div style="position:absolute; bottom:0; left:0; width:100%; height:100%; 
+                                    background:conic-gradient(from 180deg, #ff5252 0%, #ffeb3b 50%, #00e676 100%);
+                                    border-radius:70px 70px 0 0; opacity:0.6;"></div>
+                            <div style="position:absolute; bottom:0; left:50%; width:4px; height:65px; background:#fff; 
+                                    transform-origin:bottom center; transform:rotate(@(GetNeedleAngle(fearGreed.Value))deg); transition:transform 1s;"></div>
+                        </div>
+                        <div style="font-size:2.5rem; font-weight:900; margin-top:-10px; color:#fff;">@fearGreed.Value</div>
+                        <div style="color:@GetMoodColor(fearGreed.Value_Classification); font-weight:bold; font-size:1.2rem;">@fearGreed.Value_Classification</div>
+                    </div>
+            }
+            else
+            {
+                <div>Loading...</div>
+            }
+        </div>
+
+        <div class="dashboard-card">
+            <div class="section-header"><span>⚡ RSI Signals (1H)</span></div>
+            <div class="rsi-inner-grid" style="flex-grow:1;">
+                <div class="rsi-item" style="border-left:3px solid #ff5252;">
+                    <div style="font-size:0.8rem; font-weight:bold; color:#8b949e;">BTC</div>
+                    <div style="font-size:1.2rem; font-weight:bold; color:#ff5252;">72</div>
+                    <div style="font-size:0.7rem; color:#ff5252;">SELL</div>
+                </div>
+                <div class="rsi-item" style="border-left:3px solid #00e676;">
+                    <div style="font-size:0.8rem; font-weight:bold; color:#8b949e;">ETH</div>
+                    <div style="font-size:1.2rem; font-weight:bold; color:#00e676;">28</div>
+                    <div style="font-size:0.7rem; color:#00e676;">BUY</div>
+                </div>
+                <div class="rsi-item" style="border-left:3px solid #b0bec5;">
+                    <div style="font-size:0.8rem; font-weight:bold; color:#8b949e;">SOL</div>
+                    <div style="font-size:1.2rem; font-weight:bold; color:#b0bec5;">55</div>
+                    <div style="font-size:0.7rem; color:#b0bec5;">HOLD</div>
+                </div>
+                <div class="rsi-item" style="border-left:3px solid #ff5252;">
+                    <div style="font-size:0.8rem; font-weight:bold; color:#8b949e;">DOGE</div>
+                    <div style="font-size:1.2rem; font-weight:bold; color:#ff5252;">81</div>
+                    <div style="font-size:0.7rem; color:#ff5252;">DANGER</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="dashboard-card">
+            <div class="section-header"><span>🔥 Trending Now</span></div>
+            <div style="flex-grow:1; display:flex; flex-direction:column; justify-content:center;">
+                <div class="trend-item">
+                    <span style="font-weight:bold; color:#e6edf3;">1. $PEPE</span>
+                    <span style="color:#00e676;">+15.2%</span>
+                </div>
+                <div class="trend-item">
+                    <span style="font-weight:bold; color:#e6edf3;">2. $XRP</span>
+                    <span style="color:#ff5252;">-3.4%</span>
+                </div>
+                <div class="trend-item">
+                    <span style="font-weight:bold; color:#e6edf3;">3. $AI</span>
+                    <span style="color:#00e676;">+8.1%</span>
+                </div>
+                <div class="trend-item">
+                    <span style="font-weight:bold; color:#e6edf3;">4. $SUI</span>
+                    <span style="color:#00e676;">+5.5%</span>
+                </div>
+            </div>
+        </div>
+    </div> 
+
+    <footer class="app-footer">
+        <div class="footer-disclaimer">
+            <strong>⚠️ Disclaimer</strong><br/>
+            This dashboard is for informational purposes only. <br/>
+            We do not provide financial advice. Trade at your own risk.
+        </div>
+
+        <div style="margin-bottom:15px;">
+            <div style="font-size:0.8rem; margin-bottom:5px;">☕ Support the Developer (USDT/TRX)</div>
+            <div class="wallet-address">TRX:TYxMH5p3Q29ETtqj3iLy9UL7qzEMYv6bEd</div>
+        </div>
+
+        <div>&copy; 2024 CoinGap Global. All rights reserved.</div>
+    </footer>
+</div>
+
+@code {
+    private FearGreedData fearGreed;
+    private double binanceUsd = 0;
+    private double binanceKrw = 0;
+    private double upbitKrw = 0;
+    private double upbitUsd = 0;
+    private double exchangeRate = 1450;
+    private double gapPercent = 0;
+
+    // 자동 갱신을 위한 타이머
+    private Timer? timer;
+
+    private string gapMsgColor = "#8b949e";
+    private string gapBorderColor = "#30363d";
+    private string gapMessage = "Calculating...";
+    private string actionButtonText = "Check";
+
+    public class FearGreedData { public string Value { get; set; } public string Value_Classification { get; set; } }
+
+    protected override async Task OnInitializedAsync()
+    {
+        // 1. 처음 실행 시 데이터 로드
+        await LoadData();
+
+        // 2. 5초마다 데이터 갱신 (자동 리프레시)
+        timer = new Timer(async _ =>
+        {
+            await InvokeAsync(async () =>
+            {
+                await LoadData();
+                StateHasChanged(); // UI 업데이트 강제
+            });
+        }, null, 5000, 5000); // 5초 딜레이, 5초 주기
+    }
+
+    private async Task LoadData()
+    {
+        try
+        {
+            // API 호출 로직은 동일
+            var fgRes = await Http.GetFromJsonAsync<JsonElement>("https://api.alternative.me/fng/");
+            var fgData = fgRes.GetProperty("data")[0];
+            fearGreed = new FearGreedData
+                {
+                    Value = fgData.GetProperty("value").GetString(),
+                    Value_Classification = fgData.GetProperty("value_classification").GetString()
+                };
+
+            var exRes = await Http.GetFromJsonAsync<JsonElement>("https://open.er-api.com/v6/latest/USD");
+            exchangeRate = exRes.GetProperty("rates").GetProperty("KRW").GetDouble();
+
+            var binRes = await Http.GetFromJsonAsync<JsonElement>("https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT");
+            binanceUsd = double.Parse(binRes.GetProperty("price").GetString());
+            binanceKrw = binanceUsd * exchangeRate;
+
+            string upbitUrl = "https://api.upbit.com/v1/ticker?markets=KRW-BTC";
+            string proxyUrl = $"https://api.allorigins.win/get?url={Uri.EscapeDataString(upbitUrl)}";
+            var proxyRes = await Http.GetFromJsonAsync<JsonElement>(proxyUrl);
+            string upbitJsonStr = proxyRes.GetProperty("contents").GetString();
+            using (JsonDocument doc = JsonDocument.Parse(upbitJsonStr))
+            {
+                upbitKrw = doc.RootElement[0].GetProperty("trade_price").GetDouble();
+            }
+            upbitUsd = upbitKrw / exchangeRate;
+
+            CalculateGap();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error: " + ex.Message);
+        }
+    }
+
+    private void CalculateGap()
+    {
+        gapPercent = ((upbitKrw - binanceKrw) / binanceKrw) * 100;
+
+        if (gapPercent >= 3.0)
+        {
+            gapBorderColor = "#ff5252";
+            gapMessage = "Sell KR / Buy Global";
+            gapMsgColor = "#ff5252";
+            actionButtonText = "Short (Bonus)";
+        }
+        else if (gapPercent <= 0)
+        {
+            gapBorderColor = "#00e676";
+            gapMessage = "Buy KR (Cheap)";
+            gapMsgColor = "#00e676";
+            actionButtonText = "Buy on Binance";
+        }
+        else
+        {
+            gapBorderColor = "#30363d";
+            gapMessage = "Neutral Gap";
+            gapMsgColor = "#8b949e";
+            actionButtonText = "Open Account";
+        }
+    }
+
+    private string GetMoodColor(string status)
+    {
+        if (status.Contains("Greed")) return "#ff5252";
+        if (status.Contains("Fear")) return "#00e676";
+        return "#b0bec5";
+    }
+
+    private double GetNeedleAngle(string valueStr)
+    {
+        if (double.TryParse(valueStr, out double val)) { return ((val / 100.0) * 180.0) - 90.0; }
+        return -90;
+    }
+
+    // 페이지 나가면 타이머 종료 (메모리 누수 방지)
+    public void Dispose()
+    {
+        timer?.Dispose();
+    }
+}

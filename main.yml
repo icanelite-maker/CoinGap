@@ -1,0 +1,40 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [ master, main ]
+
+jobs:
+  deploy-to-github-pages:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. 내 코드 가져오기
+      - uses: actions/checkout@v3
+
+      # 2. .NET 설치
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '8.0.x'
+
+      # 3. 프로젝트 빌드 (이 부분이 중요!)
+      - name: Publish .NET Core Project
+        # ★주의★ CoinGap.csproj 경로가 맞는지 확인하세요. 
+        # 만약 솔루션 폴더 바로 아래에 있다면 그냥 dotnet publish -c Release ... 입니다.
+        # 아래는 일반적인 구조일 때의 예시입니다.
+        run: dotnet publish CoinGap.csproj -c Release -o release --nologo
+
+      # 4. index.html 복사 (새로고침 에러 방지)
+      - name: Copy index.html to 404.html
+        run: cp release/wwwroot/index.html release/wwwroot/404.html
+
+      # 5. ★★★ 핵심 해결책: Jekyll 끄기 ★★★dd
+      - name: Add .nojekyll file
+        run: touch release/wwwroot/.nojekyll
+
+      # 6. 깃허브 페이지로 배포
+      - name: Commit wwwroot to GitHub Pages
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: gh-pages
+          folder: release/wwwroot
