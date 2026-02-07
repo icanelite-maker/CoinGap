@@ -8,29 +8,29 @@ jobs:
   deploy-to-github-pages:
     runs-on: ubuntu-latest
     steps:
-      # 1. ³» ÄÚµå °¡Á®¿À±â
+      # 1. ë‚´ ì½”ë“œ ê°€ì ¸ì˜¤ê¸°
       - uses: actions/checkout@v3
 
-      # 2. .NET ¼³Ä¡
+      # 2. .NET ì„¤ì¹˜
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: '8.0.x'
 
-      # 3. ÇÁ·ÎÁ§Æ® ºôµå (¡Ú¡Ú¡Ú ¼öÁ¤µÈ ºÎºĞ ¡Ú¡Ú¡Ú)
-      # ÆÄÀÏ ÀÌ¸§ÀÌ ¹¹µç »ó°ü¾øÀÌ(.csproj) ¾Ë¾Æ¼­ Ã£¾Æ¼­ ºôµåÇÏ¶ó´Â ¸í·ÉÀÔ´Ï´Ù.
+      # 3. í”„ë¡œì íŠ¸ ë¹Œë“œ (ì´ë¦„ ìë™ ì°¾ê¸°)
+      # *.csproj ë¼ê³  ì“°ë©´ íŒŒì¼ ì´ë¦„ì´ ë­ë“  ì•Œì•„ì„œ ì°¾ì•„ì„œ ë¹Œë“œí•©ë‹ˆë‹¤.
       - name: Publish .NET Core Project
-        run: dotnet publish **/GlobalMarketSignal.csproj -c Release -o release --nologo
+        run: dotnet publish **/*.csproj -c Release -o release --nologo
 
-      # 4. index.html º¹»ç (»õ·Î°íÄ§ ¿¡·¯ ¹æÁö)
+      # 4. index.html ë³µì‚¬
       - name: Copy index.html to 404.html
         run: cp release/wwwroot/index.html release/wwwroot/404.html
 
-      # 5. Jekyll ²ô±â (»¡°£ºÒ ¹æÁö ÇÊ¼ö)
+      # 5. Jekyll ë„ê¸° (í•„ìˆ˜)
       - name: Add .nojekyll file
         run: touch release/wwwroot/.nojekyll
 
-      # 6. ±êÇãºê ÆäÀÌÁö·Î ¹èÆ÷
+      # 6. ë°°í¬í•˜ê¸°
       - name: Commit wwwroot to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
